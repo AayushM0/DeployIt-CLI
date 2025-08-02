@@ -32,21 +32,37 @@ program
         const fullpath = path.resolve(targetDir);
         
         if(git.isGitRepo(fullpath)){
-            
             await git.stageAndCommit(fullpath);
-            
         }
         else{
-            
-            
             await git.initializeRepo(fullpath);
             await git.stageAndCommit(fullpath);
-            
-            
-            
-            
         }
         console.log(`--> Run ${bold}git log${reset} to check your commit history`)
+        try {
+            let answers = ""
+            try{
+                const readmepath=path.join(targetDir,"README.md")
+                if(fs.existsSync(readmepath)){
+                    console.error("--> Read me file exists")
+                    return;
+                }
+            }
+            catch(err){
+            const { default: inquirer } = await import("inquirer");
+            answers = await inquirer.prompt([
+                {
+                    type: "input",
+                    name: "prompt",
+                    message: "--> Enter the prompt to create your read me\n--> (EX : DeployIt cli/coming live soon/init,push,deinit,deploy/frontend - vercel and netlify / use npm i AayushM0/DeployIt-CLI to downlaod ) \n--> prompt : ",
+                },
+            ]);
+
+        await git.createReadMe(targetDir,answers.prompt)
+        }
+        } catch (err) {
+            console.error("--> <-- Error here:", err.message);
+        }
     }
     )
 
@@ -58,6 +74,7 @@ program
 
         git.deinitGitRepo(fullpath);
     })
+
 let answers = ""
 
 program
@@ -86,61 +103,15 @@ program
                     },
                 },
             ]);
-
-        await git.pushToGithub(answers.link)
-        
         }
-            
+        
+        git.pushToGithub(answers.link)
 
         } catch (err) {
             console.error("--> <-- Error:", err.message);
         }
     });
 
-program
-    .command("addme [targetPath]")
-    .description("Adds a readme file to your project by analyzing your github repository")
-    .action(async (targetPath=".")=>{
-        try {
-            let answers = ""
-            try{
-                try{
-                const readmepath=path.join(targetPath,"README.md")
-                }
-                catch(err){
-                    console.log(err)
-                }
-                if(fs.existsSync(readmepath)){
-                    console.error("Read me file already exists")
-                    return;
-                }
-            }
-            catch(err){
-            const { default: inquirer } = await import("inquirer");
-            answers = await inquirer.prompt([
-                {
-                    type: "input",
-                    name: "prompt",
-                    message: "--> Enter the prompt to create your read me\n--> (EX : DeployIt cli/coming live soon/init,push,deinit,deploy/frontend - vercel and netlify / use npm i AayushM0/DeployIt-CLI to downlaod ) \n--> prompt : ",
-                    // validate: function (input) {
-                    //     if (!input.startsWith("https://github.com/")) {
-                    //         return "Please enter a valid GitHub repository URL.";
-                    //     }
-                    //     return true;
-                    // },
-                },
-            ]);
-
-        await git.createReadMe(targetPath,answers.prompt)
-        
-        }
-            
-
-        } catch (err) {
-            console.error("--> <-- Error here:", err.message);
-        }
-
-    })
 program
     .command("deploy [targetDir]")
     .description("Deploys your project on the most suitable site according to your framework used")
